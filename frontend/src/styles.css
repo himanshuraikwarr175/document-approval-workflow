@@ -1,0 +1,196 @@
+:root {
+  color: #1c2430;
+  background: #f4f6f8;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 12px;
+  color: #5c6b7a;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.user-picker {
+  display: grid;
+  gap: 6px;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 20px;
+}
+
+.stack,
+.card,
+.filters {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #d9e0e7;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid #c5ced6;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: white;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #1f4b6e;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.danger {
+  background: #8d3a3a;
+}
+
+.filters {
+  grid-auto-flow: column;
+  justify-content: start;
+}
+
+.filters button {
+  background: white;
+  color: #1c2430;
+  border: 1px solid #c5ced6;
+}
+
+.filters button.active {
+  background: #1f4b6e;
+  color: white;
+  border-color: #1f4b6e;
+}
+
+.submission-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.submission-heading,
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.submission-heading {
+  justify-content: space-between;
+}
+
+.badge {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef2f5;
+}
+
+.badge.pending {
+  background: #fff3d6;
+}
+
+.badge.approved {
+  background: #e3f5e8;
+}
+
+.badge.rejected {
+  background: #fde8e8;
+}
+
+.note,
+.muted,
+.error {
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.error {
+  color: #8d3a3a;
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .topbar,
+  .layout,
+  .submission-heading,
+  .actions {
+    display: grid;
+  }
+}
