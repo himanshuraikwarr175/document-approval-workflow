@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { decideSubmission, listSubmissions } from "../api";
+import { decideSubmission, downloadSubmission, listSubmissions } from "../api";
 import SubmissionList from "./SubmissionList";
 
 const FILTERS = [
@@ -67,6 +67,13 @@ export default function ReviewerView({ userId }) {
         submissions={submissions}
         loading={loading}
         empty="No submissions in this view."
+        onDownload={async (submission) => {
+          try {
+            await downloadSubmission(userId, submission.id, submission.original_filename);
+          } catch (err) {
+            setError(err.message);
+          }
+        }}
         renderActions={(submission) =>
           submission.status === "pending" ? (
             <div className="actions">

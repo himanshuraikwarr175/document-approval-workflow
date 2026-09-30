@@ -4,16 +4,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.submissions import router as submissions_router
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal, prepare_database
 from app.seed import seed_users
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # Import registers both tables on Base.metadata before create_all.
-    import app.models  # noqa: F401
-
-    Base.metadata.create_all(bind=engine)
+    prepare_database()
     db = SessionLocal()
     try:
         seed_users(db)

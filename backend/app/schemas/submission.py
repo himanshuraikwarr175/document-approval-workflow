@@ -1,20 +1,14 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
-class SubmissionCreate(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
-    body: str = Field(min_length=1)
-
-    @field_validator("title", "body")
-    @classmethod
-    def reject_blank(cls, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise ValueError("must not be blank")
-        return value
+def clean_title(title: str) -> str:
+    title = title.strip()
+    if not title or len(title) > 200:
+        raise ValueError("Title must be 1 to 200 characters")
+    return title
 
 
 class SubmissionDecision(BaseModel):
@@ -35,7 +29,7 @@ class SubmissionRead(BaseModel):
 
     id: int
     title: str
-    body: str
+    original_filename: str
     status: str
     submitter_id: int
     reviewer_note: str | None

@@ -3,51 +3,53 @@ REVIEWER = {"X-User-Id": "2"}
 OTHER_SUBMITTER = {"X-User-Id": "3"}
 
 
-def test_submitter_creates_pending_submission(client):
-    response = client.post(
+def post_submission(client, headers, title="Q3 report", filename="report.txt", content=b"Numbers"):
+    return client.post(
         "/api/submissions",
-        json={"title": "Q3 report", "body": "Numbers"},
-        headers=SUBMITTER,
+        data={"title": title},
+        files={"file": (filename, content, "text/plain")},
+        headers=headers,
     )
+
+
+def test_submitter_creates_pending_submission(client):
+    response = post_submission(client, SUBMITTER)
 
     assert response.status_code == 201
     body = response.json()
     assert body["status"] == "pending"
     assert body["submitter_id"] == 1
+    assert body["original_filename"] == "report.txt"
     assert body["reviewer_note"] is None
+
+    downloaded = client.get(f"/api/submissions/{body['id']}/file", headers=SUBMITTER)
+    assert downloaded.status_code == 200
+    assert downloaded.content == b"Numbers"
 
 
 def test_blank_title_is_rejected(client):
-    response = client.post(
-        "/api/submissions",
-        json={"title": "   ", "body": "Numbers"},
-        headers=SUBMITTER,
-    )
+    response = post_submission(client, SUBMITTER, title="   ")
 
     assert response.status_code == 422
 
 
+def test_empty_or_disallowed_file_is_rejected(client):
+    empty = post_submission(client, SUBMITTER, content=b"")
+    wrong_type = post_submission(client, SUBMITTER, filename="notes.exe", content=b"binary")
+
+    assert empty.status_code == 422
+    assert wrong_type.status_code == 422
+
+
 def test_reviewer_cannot_create_submission(client):
-    response = client.post(
-        "/api/submissions",
-        json={"title": "Nope", "body": "Not allowed"},
-        headers=REVIEWER,
-    )
+    response = post_submission(client, REVIEWER, title="Nope", content=b"Not allowed")
 
     assert response.status_code == 403
 
 
 def test_submitter_lists_only_own_submissions(client):
-    client.post(
-        "/api/submissions",
-        json={"title": "Mine", "body": "A"},
-        headers=SUBMITTER,
-    )
-    client.post(
-        "/api/submissions",
-        json={"title": "Theirs", "body": "B"},
-        headers=OTHER_SUBMITTER,
-    )
+    post_submission(client, SUBMITTER, title="Mine", content=b"A")
+    post_submission(client, OTHER_SUBMITTER, title="Theirs", content=b"B")
 
     response = client.get("/api/submissions", headers=SUBMITTER)
 
@@ -56,16 +58,8 @@ def test_submitter_lists_only_own_submissions(client):
 
 
 def test_reviewer_lists_pending_submissions(client):
-    client.post(
-        "/api/submissions",
-        json={"title": "Mine", "body": "A"},
-        headers=SUBMITTER,
-    )
-    client.post(
-        "/api/submissions",
-        json={"title": "Theirs", "body": "B"},
-        headers=OTHER_SUBMITTER,
-    )
+    post_submission(client, SUBMITTER, title="Mine", content=b"A")
+    post_submission(client, OTHER_SUBMITTER, title="Theirs", content=b"B")
 
     response = client.get("/api/submissions?status=pending", headers=REVIEWER)
 
@@ -73,12 +67,19 @@ def test_reviewer_lists_pending_submissions(client):
     assert {item["title"] for item in response.json()} == {"Mine", "Theirs"}
 
 
-def test_reviewer_approves_and_submitter_sees_new_status(client):
-    created = client.post(
-        "/api/submissions",
-        json={"title": "Q3 report", "body": "Numbers"},
+def test_submitter_cannot_download_someone_elses_file(client):
+    created = post_submission(client, OTHER_SUBMITTER, title="Theirs")
+
+    response = client.get(
+        f"/api/submissions/{created.json()['id']}/file",
         headers=SUBMITTER,
     )
+
+    assert response.status_code == 403
+
+
+def test_reviewer_approves_and_submitter_sees_new_status(client):
+    created = post_submission(client, SUBMITTER)
     submission_id = created.json()["id"]
 
     approved = client.patch(
@@ -96,11 +97,7 @@ def test_reviewer_approves_and_submitter_sees_new_status(client):
 
 
 def test_deciding_again_conflicts(client):
-    created = client.post(
-        "/api/submissions",
-        json={"title": "Q3 report", "body": "Numbers"},
-        headers=SUBMITTER,
-    )
+    created = post_submission(client, SUBMITTER)
     submission_id = created.json()["id"]
     client.patch(
         f"/api/submissions/{submission_id}",
@@ -118,11 +115,7 @@ def test_deciding_again_conflicts(client):
 
 
 def test_submitter_cannot_decide(client):
-    created = client.post(
-        "/api/submissions",
-        json={"title": "Q3 report", "body": "Numbers"},
-        headers=SUBMITTER,
-    )
+    created = post_submission(client, SUBMITTER)
 
     response = client.patch(
         f"/api/submissions/{created.json()['id']}",

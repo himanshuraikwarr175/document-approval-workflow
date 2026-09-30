@@ -11,10 +11,12 @@ from app.database import Base, get_db
 from app.main import app
 from app.models import User
 from app.seed import seed_users
+import app.storage as storage
 
 
 @pytest.fixture
-def client() -> Generator[TestClient, None, None]:
+def client(tmp_path, monkeypatch) -> Generator[TestClient, None, None]:
+    monkeypatch.setattr(storage, "UPLOAD_DIR", tmp_path)
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},

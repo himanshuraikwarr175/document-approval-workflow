@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { createSubmission, listSubmissions } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { createSubmission, downloadSubmission, listSubmissions } from "../api";
 import SubmissionList from "./SubmissionList";
 
-const EMPTY_FORM = { title: "", body: "" };
-
 export default function SubmitterView({ userId }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+  const fileInput = useRef(null);
+  const [title, setTitle] = useState("");
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,11 +31,13 @@ export default function SubmitterView({ userId }) {
     setSaving(true);
     setError("");
     try {
-      await createSubmission(userId, {
-        title: form.title.trim(),
-        body: form.body.trim(),
-      });
-      setForm(EMPTY_FORM);
+      const file = fileInput.current?.files?.[0];
+      if (!file) {
+        throw new Error("Choose a document file");
+      }
+      await createSubmission(userId, { title: title.trim(), file });
+      setTitle("");
+      fileInput.current.value = "";
       await load();
     } catch (err) {
       setError(err.message);
@@ -51,18 +52,14 @@ export default function SubmitterView({ userId }) {
         <h2>New submission</h2>
         <label>
           Title
-          <input
-            value={form.title}
-            onChange={(event) => setForm({ ...form, title: event.target.value })}
-            required
-          />
+          <input value={title} onChange={(event) => setTitle(event.target.value)} required />
         </label>
         <label>
           Document
-          <textarea
-            value={form.body}
-            onChange={(event) => setForm({ ...form, body: event.target.value })}
-            rows={6}
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.doc,.docx"
             required
           />
         </label>
@@ -76,6 +73,13 @@ export default function SubmitterView({ userId }) {
         submissions={submissions}
         loading={loading}
         empty="You have not submitted a document yet."
+        onDownload={async (submission) => {
+          try {
+            await downloadSubmission(userId, submission.id, submission.original_filename);
+          } catch (err) {
+            setError(err.message);
+          }
+        }}
       />
     </section>
   );

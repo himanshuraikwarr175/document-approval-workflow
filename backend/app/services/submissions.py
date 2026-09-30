@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 
 from app.models import Submission, User
-from app.schemas.submission import SubmissionCreate, SubmissionDecision
+from app.schemas.submission import SubmissionDecision
+from app.storage import InvalidFile, delete_stored_file, file_path, save_upload
 
 
 class RoleNotAllowed(Exception):
@@ -19,19 +20,31 @@ class InvalidTransition(Exception):
         self.detail = detail
 
 
-def create_submission(db: Session, user: User, data: SubmissionCreate) -> Submission:
+def create_submission(
+    db: Session,
+    user: User,
+    title: str,
+    filename: str | None,
+    data: bytes,
+) -> Submission:
     if user.role != "submitter":
         raise RoleNotAllowed("Only a submitter can create a submission")
 
+    original_filename, stored_name = save_upload(filename, data)
     submission = Submission(
-        title=data.title,
-        body=data.body,
+        title=title,
+        original_filename=original_filename,
+        stored_name=stored_name,
         status="pending",
         submitter_id=user.id,
     )
-    db.add(submission)
-    db.commit()
-    db.refresh(submission)
+    try:
+        db.add(submission)
+        db.commit()
+        db.refresh(submission)
+    except Exception:
+        delete_stored_file(stored_name)
+        raise
     return submission
 
 
@@ -68,4 +81,19 @@ def decide_submission(
     submission.reviewer_note = decision.note
     db.commit()
     db.refresh(submission)
+    return submission
+
+
+def get_readable_submission(db: Session, user: User, submission_id: int) -> Submission:
+    submission = db.get(Submission, submission_id)
+    if submission is None:
+        raise SubmissionNotFound("Submission not found")
+    if user.role == "submitter" and submission.submitter_id != user.id:
+        raise RoleNotAllowed("You can only open your own documents")
+    if not submission.stored_name:
+        raise SubmissionNotFound("This submission has no file")
+    try:
+        file_path(submission.stored_name)
+    except InvalidFile as exc:
+        raise SubmissionNotFound("File not found") from exc
     return submission
