@@ -1,10 +1,20 @@
 from sqlalchemy.orm import Session
 
 from app.models import Submission, User
-from app.schemas.submission import SubmissionCreate
+from app.schemas.submission import SubmissionCreate, SubmissionDecision
 
 
 class RoleNotAllowed(Exception):
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+
+
+class SubmissionNotFound(Exception):
+    def __init__(self, detail: str) -> None:
+        self.detail = detail
+
+
+class InvalidTransition(Exception):
     def __init__(self, detail: str) -> None:
         self.detail = detail
 
@@ -37,3 +47,25 @@ def list_submissions(
     if status is not None:
         query = query.filter(Submission.status == status)
     return query.order_by(Submission.created_at.desc(), Submission.id.desc()).all()
+
+
+def decide_submission(
+    db: Session,
+    user: User,
+    submission_id: int,
+    decision: SubmissionDecision,
+) -> Submission:
+    if user.role != "reviewer":
+        raise RoleNotAllowed("Only a reviewer can approve or reject a submission")
+
+    submission = db.get(Submission, submission_id)
+    if submission is None:
+        raise SubmissionNotFound("Submission not found")
+    if submission.status != "pending":
+        raise InvalidTransition("Only a pending submission can change status")
+
+    submission.status = decision.status
+    submission.reviewer_note = decision.note
+    db.commit()
+    db.refresh(submission)
+    return submission

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -14,6 +15,19 @@ class SubmissionCreate(BaseModel):
         if not value:
             raise ValueError("must not be blank")
         return value
+
+
+class SubmissionDecision(BaseModel):
+    status: Literal["approved", "rejected"]
+    note: str | None = None
+
+    @field_validator("note")
+    @classmethod
+    def blank_note_is_empty(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
 
 class SubmissionRead(BaseModel):
