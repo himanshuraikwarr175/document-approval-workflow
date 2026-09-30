@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from app.models import User
 
 DEMO_USERS = (
-    {"name": "Ava", "email": "ava@example.com", "role": "submitter"},
-    {"name": "Sam", "email": "sam@example.com", "role": "reviewer"},
+    {"name": "himanshu test submitter", "email": "ava@example.com", "role": "submitter"},
+    {"name": "himanshu test reviewer", "email": "sam@example.com", "role": "reviewer"},
 )
 
 

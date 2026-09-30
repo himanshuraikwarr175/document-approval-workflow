@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.submissions import router as submissions_router
 from app.database import Base, SessionLocal, engine
 from app.seed import seed_users
 
@@ -21,6 +22,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Document Approval Workflow", lifespan=lifespan)
+app.include_router(submissions_router, prefix="/api")
 
 
 @app.get("/health")
